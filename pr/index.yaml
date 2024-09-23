@@ -73,4 +73,17 @@ entries:
     urls:
     - https://executor-helm.acryl.io/pr/datahub-executor-worker-0.0.0-ak--custom-ca-certs-602ba32.tgz
     version: 0.0.0-ak--custom-ca-certs-602ba32
-generated: "2024-09-23T22:37:04.474215001Z"
+  - apiVersion: v2
+    appVersion: 0.0.1
+    created: "2024-09-23T22:37:06.788443056Z"
+    description: A Helm chart for datahub-executor-worker
+    digest: dd336810e2be29ee5d4c4e5b1dae1558f89826264ad071c676878708274ccbad
+    maintainers:
+    - email: datahub@acryl.io
+      name: DataHub
+    name: datahub-executor-worker
+    type: application
+    urls:
+    - https://executor-helm.acryl.io/pr/datahub-executor-worker-0.0.0-ak--custom-ca-certs.tgz
+    version: 0.0.0-ak--custom-ca-certs
+generated: "2024-09-23T22:37:06.787562941Z"
