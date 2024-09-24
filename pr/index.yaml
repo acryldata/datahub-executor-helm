@@ -101,9 +101,9 @@ entries:
     version: 0.0.0-ak--custom-ca-certs-4d8b0dd
   - apiVersion: v2
     appVersion: 0.0.1
-    created: "2024-09-24T06:14:14.69724949Z"
+    created: "2024-09-24T19:32:45.16616055Z"
     description: A Helm chart for datahub-executor-worker
-    digest: c2b95054d6ae8008c4735b0ece070fb99e098e53efaaf4e334c58f02eb66eda6
+    digest: 7cc5cf87da66664815eb34e9a79f73f99d56fea548f14e98a19e4862511fb4dc
     maintainers:
     - email: datahub@acryl.io
       name: DataHub
@@ -112,4 +112,4 @@ entries:
     urls:
     - https://executor-helm.acryl.io/pr/datahub-executor-worker-0.0.0-ak--custom-ca-certs.tgz
     version: 0.0.0-ak--custom-ca-certs
-generated: "2024-09-24T19:32:42.57229618Z"
+generated: "2024-09-24T19:32:45.165584655Z"
