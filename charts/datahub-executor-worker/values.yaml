@@ -5,7 +5,7 @@ global:
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
     executor:
-      worker_id: "remote"
+      executor_id: "remote"
       ingestions:
         max_workers: 4
         signal_poll_interval: 2

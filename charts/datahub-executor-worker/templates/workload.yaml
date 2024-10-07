@@ -134,8 +134,10 @@ spec:
                   key: {{ ((.Values.global.datahub).gms).secretKey }}
             - name: DATAHUB_EXECUTOR_MODE
               value: "worker"
+            {{- with .Values.global.datahub.executor }}
             - name: DATAHUB_EXECUTOR_WORKER_ID
-              value: {{ .Values.global.datahub.executor.worker_id | quote }}
+              value: {{ .executor_id | default .worker_id | quote }}
+            {{- end }}
             - name: DATAHUB_EXECUTOR_INGESTION_MAX_WORKERS
               value: {{ .Values.global.datahub.executor.ingestions.max_workers | quote }}
             - name: DATAHUB_EXECUTOR_INGESTION_SIGNAL_POLL_INTERVAL
