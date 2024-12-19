@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+{{- if .Values.extraConfigmap }}
+    name: {{ .Values.extraConfigmap.name }}
+{{- end }}
+
+data:
+{{- if .Values.extraConfigmap.data }}
+  {{- range .Values.extraConfigmap.data }}
+  {{- range $key, $value := . }}
+  {{ $key }}: |
+    {{ $value | nindent 4 }}
+  {{- end }}
+ {{- end }}
+{{- end }}

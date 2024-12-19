@@ -24,6 +24,31 @@ image:
   pullPolicy: Always
   tag: v0.3.7.3-acryl
 
+sidecarContainers:
+  sidecar-fluentbit:
+    image: "cr.fluentbit.io/fluent/fluent-bit:3.2.2"
+    imagePullPolicy: IfNotPresent
+    command:
+       - /fluent-bit/bin/fluent-bit
+    args:
+      - --workdir=/fluent-bit/etc
+      - --config=/fluent-bit/etc/conf/fluent-bit.conf
+    ports:
+      - name: http
+        containerPort: 2021
+        protocol: TCP
+    livenessProbe:
+      httpGet:
+        path: /
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /api/v1/health
+        port: http
+    volumeMounts:
+      - name: fluentbit-config
+        mountPath: /fluent-bit/etc/conf
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -60,6 +85,41 @@ securityContext: {}
 extraEnvs: []
 
 extraVolumes: []
+
+extraConfigmapMounts:
+ - name: fluentbit-config
+   mountPath: /fluent-bit/etc/conf
+   configMap: sidecar-fluent-bit
+   readOnly: true
+
+extraConfigmap:
+  name: sidecar-fluent-bit
+  data:
+    - fluent-bit.conf: |
+        [SERVICE]
+            flush           1
+            daemon          Off
+            log_level       info
+            parsers_file    parsers.conf
+            plugins_file    plugins.conf
+            http_server     On
+            http_listen     0.0.0.0
+            http_port       2021
+            storage.metrics on
+        [INPUT]
+            name            prometheus_scrape
+            host            127.0.0.1
+            port            9087
+            tag             remote
+            scrape_interval 60
+        [OUTPUT]
+            Name            prometheus_remote_write
+            Match           *
+            Host            prometheus-operated
+            Port            9090
+            Uri             /api/v1/write?prometheus_server=remote
+            add_label       source remote-executor
+
 
 extraVolumeMounts: []
 

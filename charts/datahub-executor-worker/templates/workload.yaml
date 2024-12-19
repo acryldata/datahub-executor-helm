@@ -163,7 +163,24 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-
+      {{- if .Values.sidecarContainers }}
+        {{- range $name, $spec :=  .Values.sidecarContainers }}
+        - name: {{ $name }}
+          {{- if kindIs "string" $spec }}
+            {{- tpl $spec $ | nindent 10 }}
+          {{- else }}
+            {{- toYaml $spec | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      volumes:
+         {{- if .Values.extraConfigmapMounts }}
+          {{- range .Values.extraConfigmapMounts }}
+             - name: {{ .name }}
+               configMap:
+                 name: {{ .configMap }}
+             {{- end }}
+           {{- end }}
+         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
