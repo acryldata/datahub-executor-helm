@@ -5,6 +5,7 @@ global:
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
     executor:
+      # worker_id: "DEPRECATED: use pool_id instead"
       pool_id: "remote"
       ingestions:
         max_workers: 4
