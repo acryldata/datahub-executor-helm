@@ -57,6 +57,9 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+uvExtraIndexUrl: ""
+pipExtraIndexUrl: ""
+
 extraEnvs: []
 
 extraVolumes: []

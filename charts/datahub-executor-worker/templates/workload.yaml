@@ -144,6 +144,10 @@ spec:
               value: {{ .Values.global.datahub.executor.ingestions.signal_poll_interval | quote }}
             - name: DATAHUB_EXECUTOR_MONITORS_MAX_WORKERS
               value: {{ .Values.global.datahub.executor.monitors.max_workers | quote }}
+            - name: UV_EXTRA_INDEX_URL
+              value: {{ .Values.uvExtraIndexUrl | default "" | quote }}
+            - name: PIP_EXTRA_INDEX_URL
+              value: {{ .Values.pipExtraIndexUrl | default "" | quote }}
           {{- if .Values.extraEnvs -}}
             {{ toYaml .Values.extraEnvs | nindent 12 }}
           {{- end }}
