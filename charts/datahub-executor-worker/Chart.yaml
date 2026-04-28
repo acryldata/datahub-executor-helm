@@ -2,7 +2,7 @@ apiVersion: v2
 name: datahub-executor-worker
 description: A Helm chart for datahub-executor-worker
 type: application
-version: 0.0.37
+version: 0.0.38
 appVersion: 1.0.0
 maintainers:
   - name: DataHub
