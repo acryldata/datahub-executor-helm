@@ -105,7 +105,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ required "image tag is required" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["dockerize", "/start_datahub_executor.sh"]
+          # Image CMD runs /start_datahub_executor.sh directly. The script has
+          # a shell-based wait_for_gms_ready loop (replacing the previous
+          # `dockerize -wait`), so no wrapper binary is needed. Earlier chart
+          # versions used `command: ["dockerize", "/start_datahub_executor.sh"]`
+          # which broke on Wolfi-based images (no `dockerize` binary).
           livenessProbe:
             exec:
               command:
