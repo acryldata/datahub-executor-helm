@@ -105,7 +105,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ required "image tag is required" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["dockerize", "/start_datahub_executor.sh"]
+          command: ["/start_datahub_executor.sh"]
           livenessProbe:
             exec:
               command:
