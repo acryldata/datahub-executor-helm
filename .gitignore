@@ -91,3 +91,5 @@ kubeconfig_*
 
 # Claude Code
 .claude/
+
+.idea/

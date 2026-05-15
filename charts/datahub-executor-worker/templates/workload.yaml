@@ -133,7 +133,7 @@ spec:
                   name: {{ ((.Values.global.datahub).gms).secretRef }}
                   key: {{ ((.Values.global.datahub).gms).secretKey }}
             - name: DATAHUB_EXECUTOR_MODE
-              value: "worker"
+              value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}
             - name: DATAHUB_EXECUTOR_POOL_ID
               value: {{ .Values.global.datahub.executor.pool_id | quote }}
             - name: DATAHUB_EXECUTOR_WORKER_ID

@@ -6,6 +6,7 @@ global:
       url: https://datahub.acryl.io/gms
     executor:
       pool_id: "remote"
+      channel: "SQS"
       ingestions:
         max_workers: 4
         signal_poll_interval: 2
