@@ -62,6 +62,10 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
+      {{- if .Values.tmpDir.enabled }}
+        - name: tmp-dir
+          emptyDir: {}
+      {{- end }}
       {{- with .Values.extraCaCerts }}
           - name: ca-certs
             emptyDir: {}
@@ -152,6 +156,10 @@ spec:
             {{- toYaml .Values.extraEnvsFrom | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if .Values.tmpDir.enabled }}
+            - name: tmp-dir
+              mountPath: /tmp
+            {{- end }}
             {{- if .Values.extraCaCerts }}
             - name: ca-certs
               mountPath: /etc/ssl/certs

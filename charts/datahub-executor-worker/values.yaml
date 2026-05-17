@@ -50,13 +50,20 @@ podAnnotations: {}
 podSecurityContext:
   fsGroup: 1000
 
-securityContext: {}
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+
+# tmpDir mounts a writable emptyDir at /tmp.
+# Required when securityContext.readOnlyRootFilesystem is true so that uv
+# and other tools that write to /tmp continue to work.
+# Enabled by default because it is safe and ensures /tmp is always writable.
+tmpDir:
+  enabled: true
 
 extraEnvs: []
 
