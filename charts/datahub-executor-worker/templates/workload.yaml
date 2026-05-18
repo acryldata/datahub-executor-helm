@@ -127,6 +127,12 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
+            - name: DATAHUB_GMS_PROTOCOL
+              value: {{ ((.Values.global.datahub).gms).protocol | default "http" | quote }}
+            - name: DATAHUB_GMS_HOST
+              value: {{ ((.Values.global.datahub).gms).host | default "datahub-gms" | quote }}
+            - name: DATAHUB_GMS_PORT
+              value: {{ ((.Values.global.datahub).gms).port | default 8080 | quote }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
