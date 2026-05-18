@@ -5,10 +5,7 @@ global:
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
       # host/port/protocol are used by the executor image's startup
-      # readiness gate (wait_for_gms_ready). They point to the in-cluster
-      # GMS Service, which may differ from the external `url` above when
-      # the GMS helm release has a non-empty name prefix
-      # (e.g. "dh-datahub-gms" instead of "datahub-gms").
+      # readiness gate (wait_for_gms_ready).
       host: datahub-gms
       port: 8080
       protocol: http
