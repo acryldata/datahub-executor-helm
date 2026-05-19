@@ -124,41 +124,9 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
-          {{- /*
-            Derive default GMS host/port/protocol from gms.url so users
-            with a self-contained internal URL (e.g. http://datahub-gms:8080)
-            don't need to set host/port/protocol explicitly. URL-parsing only
-            kicks in when ALL three are unset — touching any of them switches
-            to literal defaults (8080/http/datahub-gms) for the rest, since
-            partial overrides describe an internal Service that may differ
-            from the external `url`.
-          */ -}}
-          {{- $gmsUrl := ((.Values.global.datahub).gms).url | default "" -}}
-          {{- $explicitHost := ((.Values.global.datahub).gms).host -}}
-          {{- $explicitPort := ((.Values.global.datahub).gms).port -}}
-          {{- $explicitProtocol := ((.Values.global.datahub).gms).protocol -}}
-          {{- $defaultHost := "datahub-gms" -}}
-          {{- $defaultPort := 8080 -}}
-          {{- $defaultProtocol := "http" -}}
-          {{- if and $gmsUrl (not (or $explicitHost $explicitPort $explicitProtocol)) -}}
-            {{- $parsed := urlParse $gmsUrl -}}
-            {{- $defaultProtocol = $parsed.scheme | default "http" -}}
-            {{- $hp := splitn ":" 2 ($parsed.host | default "") -}}
-            {{- $defaultHost = index $hp "_0" | default "datahub-gms" -}}
-            {{- $defaultPort = index $hp "_1" | default (eq $defaultProtocol "https" | ternary 443 8080) -}}
-          {{- end -}}
-          {{- $protocol := $explicitProtocol | default $defaultProtocol -}}
-          {{- $host := $explicitHost | default $defaultHost -}}
-          {{- $port := $explicitPort | default $defaultPort }}
           env:
             - name: DATAHUB_GMS_URL
-              value: {{ $gmsUrl }}
-            - name: DATAHUB_GMS_PROTOCOL
-              value: {{ $protocol | quote }}
-            - name: DATAHUB_GMS_HOST
-              value: {{ $host | quote }}
-            - name: DATAHUB_GMS_PORT
-              value: {{ $port | quote }}
+              value: {{ ((.Values.global.datahub).gms).url }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
