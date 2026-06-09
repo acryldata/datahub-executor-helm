@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   datahub-executor-worker:
   - apiVersion: v2
+    appVersion: 1.1.1
+    created: "2026-06-09T06:14:36.631155475Z"
+    description: A Helm chart for datahub-executor-worker
+    digest: 0497d1d0170832ebadb71ba4a67766cdc2822e7511841daf7332a0ed8463e79c
+    maintainers:
+    - email: datahub@acryl.io
+      name: DataHub
+    name: datahub-executor-worker
+    type: application
+    urls:
+    - https://executor-helm.acryl.io/datahub-executor-worker-0.0.46.tgz
+    version: 0.0.46
+  - apiVersion: v2
     appVersion: 1.1.0
     created: "2026-06-01T07:40:21.140899595Z"
     description: A Helm chart for datahub-executor-worker
@@ -521,4 +534,4 @@ entries:
     urls:
     - https://executor-helm.acryl.io/datahub-executor-worker-0.0.6.tgz
     version: 0.0.6
-generated: "2026-06-01T07:40:21.140006246Z"
+generated: "2026-06-09T06:14:36.630064491Z"
