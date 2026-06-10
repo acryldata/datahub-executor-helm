@@ -23,7 +23,7 @@ image:
   # GCP: us-docker.pkg.dev/acryl-prod/datahub/datahub-executor
   repository: 795586375822.dkr.ecr.us-west-2.amazonaws.com/datahub-executor
   pullPolicy: Always
-  tag: v1.1.1-cloud
+  tag: v1.1.2-cloud
 
 imagePullSecrets: []
 nameOverride: ""
