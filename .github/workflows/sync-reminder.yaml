@@ -1,0 +1,188 @@
+name: Sync Reminder for Terraform and CloudFormation
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'charts/datahub-executor-worker/templates/**'
+      - 'charts/datahub-executor-worker/values.yaml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-sync-ticket:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+      LINEAR_TEAM_ID: b1c9a278-522e-47cb-81af-8b860ead0c76
+      LINEAR_TODO_STATE_ID: ef7a0a27-3272-4bfc-ad93-0ad9dd25bba5
+      LINEAR_PROJECT_ID: ''
+    steps:
+      - name: Resolve PR Author Email
+        id: author-email
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (pr.user.type === 'Bot') {
+              core.info('PR author is a bot; skipping email resolution.');
+              core.setOutput('author_email', '');
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const isReal = (e) => e && !e.endsWith('users.noreply.github.com');
+            let email = commits.find(
+              (c) => c.author && c.author.login === pr.user.login && isReal(c.commit.author.email)
+            )?.commit.author.email;
+            if (!email) {
+              email = [...commits].reverse().find((c) => isReal(c.commit?.author?.email))
+                ?.commit.author.email;
+            }
+            core.info(email ? `Resolved author email: ${email}` : 'No usable author email found.');
+            core.setOutput('author_email', email || '');
+
+      - name: Resolve Linear Assignee
+        id: assignee
+        uses: actions/github-script@v7
+        env:
+          AUTHOR_EMAIL: ${{ steps.author-email.outputs.author_email }}
+        with:
+          script: |
+            const email = process.env.AUTHOR_EMAIL;
+            if (!email) {
+              core.info('No author email; ticket will be unassigned.');
+              core.setOutput('assignee_id', '');
+              return;
+            }
+            const res = await fetch('https://api.linear.app/graphql', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': process.env.LINEAR_API_KEY,
+              },
+              body: JSON.stringify({
+                query: 'query($email: String!) { users(filter: { email: { eq: $email } }) { nodes { id displayName } } }',
+                variables: { email },
+              }),
+            });
+            const json = await res.json();
+            if (json.errors) throw new Error('Linear API error: ' + JSON.stringify(json.errors));
+            const user = json.data.users.nodes[0];
+            core.info(user ? `Matched Linear user: ${user.displayName}` : `No Linear user for ${email}.`);
+            core.setOutput('assignee_id', user?.id || '');
+
+      - name: Collect Changed Chart Files
+        id: files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const chartFiles = files
+              .map((f) => f.filename)
+              .filter((f) => f.startsWith('charts/datahub-executor-worker/'))
+              .map((f) => '- `' + f + '`')
+              .join('\n');
+            core.setOutput('chart_files', chartFiles || '_(none detected)_');
+
+      - name: Create Linear Sync Ticket
+        id: ticket
+        uses: actions/github-script@v7
+        env:
+          ASSIGNEE_ID: ${{ steps.assignee.outputs.assignee_id }}
+          CHART_FILES: ${{ steps.files.outputs.chart_files }}
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const assigneeId = process.env.ASSIGNEE_ID;
+
+            const description = [
+              '### 🔁 Remote Executor deployment sync needed',
+              '',
+              'A PR was merged in the Helm chart (`datahub-executor-worker`) that may need mirroring into the **Terraform** and **CloudFormation** deployment paths.',
+              '',
+              `**Merged PR:** [${pr.title} (#${pr.number})](${pr.html_url})`,
+              `**Author:** @${author}`,
+              '',
+              '**Changed chart files:**',
+              process.env.CHART_FILES,
+              '',
+              '---',
+              '',
+              'Please mirror the change (if applicable) into both other deployment methods:',
+              '',
+              '- [ ] **Terraform** — `acryldata/datahub-terraform-modules` → `remote-ingestion-executor/`',
+              '- [ ] **CloudFormation** — `acryldata/datahub-cloudformation` → `remote-executor/datahub-executor.ecs.template.yaml`',
+              '',
+              "If this change does not affect the container's environment variables / deployment surface, you can mark this ticket **Done** without any further steps.",
+              '',
+              '_Auto-created by the `datahub-executor-helm` sync-reminder workflow._',
+            ].join('\n');
+
+            const input = {
+              teamId: process.env.LINEAR_TEAM_ID,
+              stateId: process.env.LINEAR_TODO_STATE_ID,
+              title: `Sync RE deployment: mirror "${pr.title}" (#${pr.number}) into Terraform & CloudFormation`,
+              description,
+            };
+            if (assigneeId) input.assigneeId = assigneeId;
+            if (process.env.LINEAR_PROJECT_ID) input.projectId = process.env.LINEAR_PROJECT_ID;
+
+            const res = await fetch('https://api.linear.app/graphql', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': process.env.LINEAR_API_KEY,
+              },
+              body: JSON.stringify({
+                query: 'mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { identifier url } } }',
+                variables: { input },
+              }),
+            });
+            const json = await res.json();
+            if (json.errors) throw new Error('Linear API error: ' + JSON.stringify(json.errors));
+            const issue = json.data.issueCreate.issue;
+            core.info(`Created Linear issue ${issue.identifier}: ${issue.url}`);
+            core.setOutput('issue_identifier', issue.identifier);
+            core.setOutput('issue_url', issue.url);
+
+      - name: Comment On PR
+        uses: actions/github-script@v7
+        env:
+          ASSIGNEE_ID: ${{ steps.assignee.outputs.assignee_id }}
+          ISSUE_IDENTIFIER: ${{ steps.ticket.outputs.issue_identifier }}
+          ISSUE_URL: ${{ steps.ticket.outputs.issue_url }}
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const author = pr.user.login;
+            const id = process.env.ISSUE_IDENTIFIER;
+            const url = process.env.ISSUE_URL;
+            const assigned = process.env.ASSIGNEE_ID !== '';
+
+            const line = assigned
+              ? `@${author} — you've been assigned. Please mirror the change into Terraform and CloudFormation, or close the ticket if it doesn't apply.`
+              : `@${author} — couldn't auto-assign you in Linear; please self-assign **[${id}](${url})**. Mirror the change into Terraform and CloudFormation, or close the ticket if it doesn't apply.`;
+
+            const body = [
+              `🔁 Created a sync reminder to mirror this change into **Terraform** and **CloudFormation**: **[${id}](${url})**`,
+              '',
+              line,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: pr.number, body,
+            });
