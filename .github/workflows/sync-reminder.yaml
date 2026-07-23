@@ -21,7 +21,9 @@ jobs:
       LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
       LINEAR_TEAM_ID: b1c9a278-522e-47cb-81af-8b860ead0c76
       LINEAR_TODO_STATE_ID: ef7a0a27-3272-4bfc-ad93-0ad9dd25bba5
-      LINEAR_PROJECT_ID: ''
+      LINEAR_PROJECT_ID: c35ebf0c-d99d-4e7a-9d01-1962839bcc22
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: C05SL1JUD6F
     steps:
       - name: Resolve PR Author Email
         id: author-email
@@ -186,3 +188,36 @@ jobs:
             await github.rest.issues.createComment({
               owner, repo, issue_number: pr.number, body,
             });
+
+      - name: Notify Ingestion Slack If Unassigned
+        if: steps.assignee.outputs.assignee_id == '' && env.SLACK_BOT_TOKEN != ''
+        uses: actions/github-script@v7
+        env:
+          ISSUE_IDENTIFIER: ${{ steps.ticket.outputs.issue_identifier }}
+          ISSUE_URL: ${{ steps.ticket.outputs.issue_url }}
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const id = process.env.ISSUE_IDENTIFIER;
+            const url = process.env.ISSUE_URL;
+            const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const text = [
+              `:arrows_counterclockwise: *Remote Executor sync ticket needs an owner* — <${url}|${id}>`,
+              `Merged PR <${pr.html_url}|#${pr.number}> ("${esc(pr.title)}") by \`${author}\` couldn't be auto-assigned in Linear (no matching user).`,
+              "Please pick it up, or close the ticket if the change doesn't affect Terraform / CloudFormation.",
+            ].join('\n');
+            const res = await fetch('https://slack.com/api/chat.postMessage', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+                'Content-Type': 'application/json; charset=utf-8',
+              },
+              body: JSON.stringify({ channel: process.env.SLACK_CHANNEL_ID, text }),
+            });
+            // Slack returns HTTP 200 even on logical errors; check the ok field.
+            const json = await res.json();
+            if (!json.ok) {
+              throw new Error(`Slack chat.postMessage failed: ${json.error}`);
+            }
+            core.info('Posted unassigned-ticket notification to #ingestion-pod.');
