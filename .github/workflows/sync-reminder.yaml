@@ -12,10 +12,55 @@ permissions:
   pull-requests: write
 
 jobs:
-  create-sync-ticket:
+  evaluate:
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      should_create: ${{ steps.gate.outputs.should_create }}
+    steps:
+      - name: Determine If Sync Is Needed
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const prefix = 'charts/datahub-executor-worker/';
+            // Chart.yaml is pure version metadata; ignore it when deciding.
+            const relevant = files.filter(
+              (f) => f.filename.startsWith(prefix) && !f.filename.endsWith('/Chart.yaml')
+            );
+            // Any changed chart file other than values.yaml (a template, or anything
+            // unexpected) is a real change. Only values.yaml gets the tag-line check.
+            const nonValues = relevant.filter((f) => !f.filename.endsWith('/values.yaml'));
+            const values = relevant.find((f) => f.filename.endsWith('/values.yaml'));
+            let valuesMeaningful = false;
+            if (values && values.patch) {
+              // A version bump only rewrites the "  tag: vX.Y.Z-cloud" line.
+              const changed = values.patch.split('\n').filter(
+                (l) => (l.startsWith('+') || l.startsWith('-')) &&
+                       !l.startsWith('+++') && !l.startsWith('---')
+              );
+              valuesMeaningful = changed.some((l) => !/^[+-]\s*tag:\s*/.test(l));
+            } else if (values) {
+              // No patch available (e.g. diff too large); fail open and create.
+              valuesMeaningful = true;
+            }
+            const shouldCreate = nonValues.length > 0 || valuesMeaningful;
+            core.info(`nonValuesChanged=${nonValues.length > 0} valuesMeaningful=${valuesMeaningful} should_create=${shouldCreate}`);
+            if (!shouldCreate) {
+              core.info('Version-bump-only change detected; skipping sync ticket.');
+            }
+            core.setOutput('should_create', String(shouldCreate));
+
+  create-sync-ticket:
+    needs: evaluate
+    if: needs.evaluate.outputs.should_create == 'true'
     runs-on: ubuntu-latest
     env:
       LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
