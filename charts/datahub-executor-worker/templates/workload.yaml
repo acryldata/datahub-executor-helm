@@ -144,6 +144,26 @@ spec:
               value: {{ .Values.global.datahub.executor.ingestions.signal_poll_interval | quote }}
             - name: DATAHUB_EXECUTOR_MONITORS_MAX_WORKERS
               value: {{ .Values.global.datahub.executor.monitors.max_workers | quote }}
+            - name: ONLINE_SMART_ASSERTIONS_ENABLED
+              value: {{ (((.Values.global.datahub).observability).online_smart_assertions).enabled | default true | quote }}
+            - name: DATAHUB_USE_OBSERVE_MODELS
+              value: {{ (((.Values.global.datahub).observability).inference).use_observe_models | default true | quote }}
+            - name: DATAHUB_USE_INFERENCE_V2
+              value: {{ (((.Values.global.datahub).observability).inference).use_inference_v2 | default false | quote }}
+            - name: DATAHUB_EXECUTOR_ENABLE_DELTA_BOUNDS
+              value: {{ (((.Values.global.datahub).observability).inference).enable_delta_bounds | default true | quote }}
+            - name: DATAHUB_EXECUTOR_ALLOW_CALL_STATEMENTS
+              value: {{ ((.Values.global.datahub).executor).allow_call_statements | default false | quote }}
+            - name: DATAHUB_EXECUTOR_SNOWFLAKE_QUOTE_COLUMNS
+              value: {{ (((.Values.global.datahub).executor).snowflake).quote_columns | default false | quote }}
+            - name: DATAHUB_EXECUTOR_SNOWFLAKE_TIMEOUT
+              value: {{ (((.Values.global.datahub).executor).snowflake).timeout | default 600 | quote }}
+            - name: DATAHUB_EXECUTOR_BIGQUERY_TIMEOUT
+              value: {{ (((.Values.global.datahub).executor).bigquery).timeout | default 600 | quote }}
+            - name: DATAHUB_EXECUTOR_REDSHIFT_TIMEOUT
+              value: {{ (((.Values.global.datahub).executor).redshift).timeout | default 600 | quote }}
+            - name: DATAHUB_EXECUTOR_DATABRICKS_TIMEOUT
+              value: {{ (((.Values.global.datahub).executor).databricks).timeout | default 600 | quote }}
           {{- if .Values.extraEnvs -}}
             {{ toYaml .Values.extraEnvs | nindent 12 }}
           {{- end }}

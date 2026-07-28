@@ -7,11 +7,40 @@ global:
     executor:
       pool_id: "remote"
       channel: "SQS"
+      # Allow stored-procedure CALL statements in custom SQL assertions. Off by default:
+      # enabling accepts the risk that the procedure body (opaque to SELECT-only sanitization)
+      # may perform mutations.
+      allow_call_statements: false
       ingestions:
         max_workers: 4
         signal_poll_interval: 2
       monitors:
         max_workers: 10
+      # Per-platform statement timeouts (seconds) for the queries the worker issues during
+      # assertion/monitor evaluation.
+      snowflake:
+        timeout: 600
+        # Quote column identifiers in generated Snowflake assertion queries.
+        quote_columns: false
+      bigquery:
+        timeout: 600
+      redshift:
+        timeout: 600
+      databricks:
+        timeout: 600
+    # Smart-assertion / observe feature flags consumed by the executor worker's monitor-training
+    # and assertion-evaluation paths. Defaults mirror the platform (datahub-helm-fork) so remote
+    # executors behave identically. use_observe_models / use_inference_v2 are no-ops on slim
+    # images that do not ship the datahub_observe package.
+    observability:
+      online_smart_assertions:
+        enabled: true
+      inference:
+        use_observe_models: true
+        use_inference_v2: false
+        # Emit delta-space prediction bounds. Set false for executor workers not yet on
+        # delta-aware code, otherwise they may emit false-positive anomalies.
+        enable_delta_bounds: true
 
 workloadKind: Deployment
 
