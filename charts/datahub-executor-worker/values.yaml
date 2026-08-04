@@ -105,6 +105,7 @@ resources:
   requests:
     memory: "8Gi"
     cpu: "4"
+    ephemeral-storage: 25Gi
 
 nodeSelector: {}
 
