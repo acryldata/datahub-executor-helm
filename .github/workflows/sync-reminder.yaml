@@ -174,7 +174,6 @@ jobs:
               '- [ ] **CloudFormation** — `acryldata/datahub-cloudformation` → `remote-executor/datahub-executor.ecs.template.yaml`',
               '- [ ] **Helm (fork)** — `acryldata/datahub-helm-fork` → `charts/datahub/subcharts/acryl-datahub-executor-worker/` (a vendored copy of this chart)',
               '',
-              "> The fork's copy has diverged from this chart, so apply the **equivalent** change rather than copy-pasting the files.",
               '',
               "If this change does not affect the container's environment variables / deployment surface, you can mark this ticket **Done** without any further steps.",
               '',
