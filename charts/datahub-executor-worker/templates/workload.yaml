@@ -164,6 +164,8 @@ spec:
               value: {{ (((.Values.global.datahub).executor).redshift).timeout | default 600 | quote }}
             - name: DATAHUB_EXECUTOR_DATABRICKS_TIMEOUT
               value: {{ (((.Values.global.datahub).executor).databricks).timeout | default 600 | quote }}
+            - name: UV_LINK_MODE
+              value: {{ ((.Values.global.datahub).executor).uv_link_mode | default "hardlink" | quote }}
           {{- if .Values.extraEnvs -}}
             {{ toYaml .Values.extraEnvs | nindent 12 }}
           {{- end }}

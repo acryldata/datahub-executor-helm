@@ -7,6 +7,11 @@ global:
     executor:
       pool_id: "remote"
       channel: "SQS"
+      # uv link mode for building ingestion venvs. "hardlink" (default) shares package bytes with
+      # the uv cache — no per-venv copy, no ephemeral spike — and requires the venv working dir and
+      # ~/.cache/uv on the same filesystem. Use "copy" only when they are split (e.g. a separate
+      # emptyDir/tmpfs for /tmp), where hardlinks are impossible.
+      uv_link_mode: hardlink
       # Allow stored-procedure CALL statements in custom SQL assertions. Off by default:
       # enabling accepts the risk that the procedure body (opaque to SELECT-only sanitization)
       # may perform mutations.
