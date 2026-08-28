@@ -40,6 +40,11 @@ global:
     observability:
       online_smart_assertions:
         enabled: true
+      # Skip the source freshness query while the learned update interval proves the
+      # table is still fresh, so smart freshness assertions only query the warehouse
+      # once the result can actually change. Set false to query on every cron firing.
+      smart_freshness_query_gating:
+        enabled: true
       inference:
         use_observe_models: true
         use_inference_v2: false
