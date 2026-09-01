@@ -1,9 +1,22 @@
 global:
   datahub:
     gms:
-      secretRef: datahub-access-token-secret
+      secretRef: datahub-access-token-secret  # set to "" for OAuth (DATAHUB_AUTH_TYPE) deployments
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
+    auth:
+      type: ""  # "" = PAT/system; k8s_oidc | azure_entra | oidc_client_credentials
+      tokenFile: ""  # k8s_oidc: path to the projected service-account token
+      audience: ""  # k8s_oidc / oidc_client_credentials: token audience
+      azure:
+        tenantId: ""
+        clientId: ""
+        scope: ""
+      oidc:
+        tokenEndpoint: ""
+        clientId: ""
+      # Client secrets (DATAHUB_AUTH_CLIENT_SECRET, DATAHUB_AUTH_AZURE_CLIENT_SECRET)
+      # come from extraEnvsFrom (referencing a Secret), not plaintext values here.
     executor:
       pool_id: "remote"
       channel: "SQS"

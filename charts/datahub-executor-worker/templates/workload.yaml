@@ -127,11 +127,37 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
+            {{- if and (((.Values.global.datahub).gms).secretRef) (not (((.Values.global).datahub).auth).type) }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ ((.Values.global.datahub).gms).secretRef }}
                   key: {{ ((.Values.global.datahub).gms).secretKey }}
+            {{- end }}
+            {{- with (((.Values.global).datahub).auth) }}
+            {{- if .type }}
+            - name: DATAHUB_AUTH_TYPE
+              value: {{ .type | quote }}
+            {{- if eq .type "k8s_oidc" }}
+            - name: DATAHUB_AUTH_TOKEN_FILE
+              value: {{ .tokenFile | quote }}
+            - name: DATAHUB_AUTH_AUDIENCE
+              value: {{ .audience | quote }}
+            {{- else if eq .type "azure_entra" }}
+            - name: DATAHUB_AUTH_AZURE_TENANT_ID
+              value: {{ .azure.tenantId | quote }}
+            - name: DATAHUB_AUTH_AZURE_CLIENT_ID
+              value: {{ .azure.clientId | quote }}
+            - name: DATAHUB_AUTH_AZURE_SCOPE
+              value: {{ .azure.scope | quote }}
+            {{- else if eq .type "oidc_client_credentials" }}
+            - name: DATAHUB_AUTH_TOKEN_ENDPOINT
+              value: {{ .oidc.tokenEndpoint | quote }}
+            - name: DATAHUB_AUTH_CLIENT_ID
+              value: {{ .oidc.clientId | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}
             - name: DATAHUB_EXECUTOR_POOL_ID
