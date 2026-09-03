@@ -146,6 +146,8 @@ spec:
               value: {{ .Values.global.datahub.executor.monitors.max_workers | quote }}
             - name: ONLINE_SMART_ASSERTIONS_ENABLED
               value: {{ (((.Values.global.datahub).observability).online_smart_assertions).enabled | default true | quote }}
+            - name: SMART_FRESHNESS_QUERY_GATING_ENABLED
+              value: {{ (((.Values.global.datahub).observability).smart_freshness_query_gating).enabled | quote }}
             - name: DATAHUB_USE_OBSERVE_MODELS
               value: {{ (((.Values.global.datahub).observability).inference).use_observe_models | default true | quote }}
             - name: DATAHUB_USE_INFERENCE_V2
