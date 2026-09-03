@@ -1,9 +1,22 @@
 global:
   datahub:
     gms:
+      # PAT as env via valueFrom.secretKeyRef (default). Set to "" to skip that
+      # env var (tokenFile, extraEnvs, or extraVolumes instead).
       secretRef: datahub-access-token-secret
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
+      # Mount the PAT (and extraEnvs that use secretKeyRef) as files and export
+      # them at startup. Use this when the cluster forbids secretKeyRef on
+      # environment variables. Plain extraEnvs (value / fieldRef / configMap) are
+      # unchanged.
+      tokenFile:
+        enabled: false
+        # Defaults to secretRef / secretKey above when omitted.
+        # secretName: datahub-access-token-secret
+        # secretKey: datahub-access-token-secret-key
+        mountPath: /mnt/secrets
+        fileName: token
     executor:
       pool_id: "remote"
       channel: "SQS"
@@ -88,14 +101,25 @@ podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
+  # seccompProfile:
+  #   type: RuntimeDefault
 
+# Container security context. The image runs as UID/GID 1000 (user datahub).
+# Example for restricted policies (allowPrivilegeEscalation false, non-root,
+# RuntimeDefault seccomp, drop NET_RAW / ALL):
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
+  # allowPrivilegeEscalation: false
   # runAsNonRoot: true
   # runAsUser: 1000
+  # runAsGroup: 1000
+  # capabilities:
+  #   drop:
+  #     - ALL
+  # seccompProfile:
+  #   type: RuntimeDefault
+  # Do not set readOnlyRootFilesystem: true unless /tmp is a writable volume
+  # (heartbeats and dynamic venvs write there). extraCaCerts is incompatible
+  # with restricted policies: that init container is privileged and runs as root.
 
 extraEnvs: []
 
