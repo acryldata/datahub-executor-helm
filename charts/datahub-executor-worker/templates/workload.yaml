@@ -1,3 +1,4 @@
+{{- $gmsTokenFile := fromYaml (include "datahub-executor-worker.gms.tokenFile" .) -}}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
@@ -62,6 +63,14 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
+      {{- if $gmsTokenFile.enabled }}
+        - name: gms-token
+          secret:
+            secretName: {{ $gmsTokenFile.secretName | quote }}
+            items:
+              - key: {{ $gmsTokenFile.secretKey | quote }}
+                path: {{ $gmsTokenFile.fileName | quote }}
+      {{- end }}
       {{- with .Values.extraCaCerts }}
           - name: ca-certs
             emptyDir: {}
@@ -105,7 +114,16 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ required "image tag is required" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if $gmsTokenFile.enabled }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              export DATAHUB_GMS_TOKEN="$(tr -d '\n\r' < {{ printf "%s/%s" $gmsTokenFile.mountPath $gmsTokenFile.fileName }})"
+              exec /start_datahub_executor.sh
+          {{- else }}
           command: ["/start_datahub_executor.sh"]
+          {{- end }}
           livenessProbe:
             exec:
               command:
@@ -127,11 +145,13 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
+            {{- if and (not $gmsTokenFile.enabled) ((.Values.global.datahub).gms).secretRef }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ ((.Values.global.datahub).gms).secretRef }}
-                  key: {{ ((.Values.global.datahub).gms).secretKey }}
+                  name: {{ .Values.global.datahub.gms.secretRef }}
+                  key: {{ .Values.global.datahub.gms.secretKey }}
+            {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}
             - name: DATAHUB_EXECUTOR_POOL_ID
@@ -176,6 +196,11 @@ spec:
             {{- toYaml .Values.extraEnvsFrom | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if $gmsTokenFile.enabled }}
+            - name: gms-token
+              mountPath: {{ $gmsTokenFile.mountPath | quote }}
+              readOnly: true
+            {{- end }}
             {{- if .Values.extraCaCerts }}
             - name: ca-certs
               mountPath: /etc/ssl/certs

@@ -61,3 +61,26 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+PAT file-mount settings. When enabled, the chart mounts the GMS token Secret as a
+file and exports DATAHUB_GMS_TOKEN at startup instead of using secretKeyRef.
+*/}}
+{{- define "datahub-executor-worker.gms.tokenFile" -}}
+{{- $gms := ((.Values.global).datahub).gms | default dict -}}
+{{- $tf := $gms.tokenFile | default dict -}}
+{{- $secretName := $tf.secretName | default $gms.secretRef -}}
+{{- $secretKey := $tf.secretKey | default $gms.secretKey -}}
+{{- $enabled := $tf.enabled | default false -}}
+{{- if and $enabled (not $secretName) -}}
+{{- fail "global.datahub.gms.tokenFile.enabled requires tokenFile.secretName or global.datahub.gms.secretRef" -}}
+{{- end -}}
+{{- if and $enabled (not $secretKey) -}}
+{{- fail "global.datahub.gms.tokenFile.enabled requires tokenFile.secretKey or global.datahub.gms.secretKey" -}}
+{{- end -}}
+enabled: {{ $enabled }}
+secretName: {{ $secretName | quote }}
+secretKey: {{ $secretKey | quote }}
+mountPath: {{ $tf.mountPath | default "/mnt/gms-token" | quote }}
+fileName: {{ $tf.fileName | default "token" | quote }}
+{{- end -}}
