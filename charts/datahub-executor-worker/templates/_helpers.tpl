@@ -81,7 +81,7 @@ startup instead of using secretKeyRef on the Pod spec.
 {{- end -}}
 {{- if $enabled -}}
 {{- range $.Values.extraEnvs | default list -}}
-{{- $sk := dig "valueFrom" "secretKeyRef" dict . -}}
+{{- $sk := (.valueFrom).secretKeyRef | default dict -}}
 {{- if $sk.name }}
 {{- if not .name -}}
 {{- fail "extraEnvs secretKeyRef entries require name when tokenFile.enabled is true" -}}

@@ -73,7 +73,7 @@ spec:
                     - key: {{ $gmsTokenFile.secretKey | quote }}
                       path: {{ $gmsTokenFile.fileName | quote }}
               {{- range .Values.extraEnvs | default list }}
-              {{- $sk := dig "valueFrom" "secretKeyRef" dict . }}
+              {{- $sk := (.valueFrom).secretKeyRef | default dict }}
               {{- if $sk.name }}
               - secret:
                   name: {{ $sk.name | quote }}
@@ -136,7 +136,7 @@ spec:
               set -eu
               export DATAHUB_GMS_TOKEN="$(tr -d '\n\r' < {{ printf "%s/%s" $gmsTokenFile.mountPath $gmsTokenFile.fileName }})"
               {{- range .Values.extraEnvs | default list }}
-              {{- if (dig "valueFrom" "secretKeyRef" "name" "" .) }}
+              {{- if ((.valueFrom).secretKeyRef).name }}
               export {{ .name }}="$(tr -d '\n\r' < {{ printf "%s/%s" $gmsTokenFile.mountPath .name }})"
               {{- end }}
               {{- end }}
@@ -215,7 +215,7 @@ spec:
           {{- if .Values.extraEnvs }}
           {{- if $gmsTokenFile.enabled }}
             {{- range .Values.extraEnvs }}
-            {{- if not (dig "valueFrom" "secretKeyRef" "name" "" .) }}
+            {{- if not ((.valueFrom).secretKeyRef).name }}
             {{- toYaml (list .) | nindent 12 }}
             {{- end }}
             {{- end }}
