@@ -34,9 +34,9 @@ securityContext:
 
 Do not enable `extraCaCerts` under those policies (the CA init container is privileged and runs as root). Avoid `readOnlyRootFilesystem: true` unless `/tmp` is a writable volume.
 
-### PAT without `secretKeyRef`
+### Secrets without `secretKeyRef`
 
-By default `DATAHUB_GMS_TOKEN` is injected with `valueFrom.secretKeyRef`. To mount the same Kubernetes Secret as a file and load it at startup instead:
+By default `DATAHUB_GMS_TOKEN` is injected with `valueFrom.secretKeyRef`. To mount it (and any `extraEnvs` that use `secretKeyRef`) as files instead:
 
 ```yaml
 global:
@@ -46,6 +46,15 @@ global:
       secretKey: datahub-access-token-secret-key
       tokenFile:
         enabled: true
+
+extraEnvs:
+  - name: SNOWFLAKE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-creds
+        key: password
+  - name: UV_INDEX_URL
+    value: "https://pypi.example.com/simple"
 ```
 
-The worker still receives `DATAHUB_GMS_TOKEN` in process environment after startup; it is not present as a `secretKeyRef` on the Pod spec. Set `secretRef: ""` (and leave `tokenFile.enabled: false`) if you inject the token yourself via `extraEnvs` / `extraVolumes`.
+With `tokenFile.enabled: true`, `SNOWFLAKE_PASSWORD` is projected onto the same volume as the PAT and exported at startup — it does not appear as `secretKeyRef` on the Pod spec. Plain `value` / `fieldRef` / `configMapKeyRef` extraEnvs are still rendered as environment variables. Set `secretRef: ""` (and leave `tokenFile.enabled: false`) if you inject the token yourself via `extraVolumes`.

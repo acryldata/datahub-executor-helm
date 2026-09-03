@@ -65,11 +65,26 @@ spec:
       volumes:
       {{- if $gmsTokenFile.enabled }}
         - name: gms-token
-          secret:
-            secretName: {{ $gmsTokenFile.secretName | quote }}
-            items:
-              - key: {{ $gmsTokenFile.secretKey | quote }}
-                path: {{ $gmsTokenFile.fileName | quote }}
+          projected:
+            sources:
+              - secret:
+                  name: {{ $gmsTokenFile.secretName | quote }}
+                  items:
+                    - key: {{ $gmsTokenFile.secretKey | quote }}
+                      path: {{ $gmsTokenFile.fileName | quote }}
+              {{- range .Values.extraEnvs | default list }}
+              {{- $sk := dig "valueFrom" "secretKeyRef" dict . }}
+              {{- if $sk.name }}
+              - secret:
+                  name: {{ $sk.name | quote }}
+                  {{- if hasKey $sk "optional" }}
+                  optional: {{ $sk.optional }}
+                  {{- end }}
+                  items:
+                    - key: {{ $sk.key | quote }}
+                      path: {{ .name | quote }}
+              {{- end }}
+              {{- end }}
       {{- end }}
       {{- with .Values.extraCaCerts }}
           - name: ca-certs
@@ -120,6 +135,11 @@ spec:
             - |
               set -eu
               export DATAHUB_GMS_TOKEN="$(tr -d '\n\r' < {{ printf "%s/%s" $gmsTokenFile.mountPath $gmsTokenFile.fileName }})"
+              {{- range .Values.extraEnvs | default list }}
+              {{- if (dig "valueFrom" "secretKeyRef" "name" "" .) }}
+              export {{ .name }}="$(tr -d '\n\r' < {{ printf "%s/%s" $gmsTokenFile.mountPath .name }})"
+              {{- end }}
+              {{- end }}
               exec /start_datahub_executor.sh
           {{- else }}
           command: ["/start_datahub_executor.sh"]
@@ -151,6 +171,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.global.datahub.gms.secretRef }}
                   key: {{ .Values.global.datahub.gms.secretKey }}
+            {{- end }}
+            {{- if $gmsTokenFile.enabled }}
+            - name: DATAHUB_EXECUTOR_FILE_SECRET_BASEDIR
+              value: {{ $gmsTokenFile.mountPath | quote }}
             {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}
@@ -188,8 +212,16 @@ spec:
               value: {{ (((.Values.global.datahub).executor).databricks).timeout | default 600 | quote }}
             - name: UV_LINK_MODE
               value: {{ ((.Values.global.datahub).executor).uv_link_mode | default "hardlink" | quote }}
-          {{- if .Values.extraEnvs -}}
+          {{- if .Values.extraEnvs }}
+          {{- if $gmsTokenFile.enabled }}
+            {{- range .Values.extraEnvs }}
+            {{- if not (dig "valueFrom" "secretKeyRef" "name" "" .) }}
+            {{- toYaml (list .) | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          {{- else }}
             {{ toYaml .Values.extraEnvs | nindent 12 }}
+          {{- end }}
           {{- end }}
           {{- if .Values.extraEnvsFrom }}
           envFrom:

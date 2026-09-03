@@ -6,14 +6,16 @@ global:
       secretRef: datahub-access-token-secret
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
-      # Mount the PAT as a file and export DATAHUB_GMS_TOKEN at startup.
-      # Use this when the cluster forbids secretKeyRef on environment variables.
+      # Mount the PAT (and extraEnvs that use secretKeyRef) as files and export
+      # them at startup. Use this when the cluster forbids secretKeyRef on
+      # environment variables. Plain extraEnvs (value / fieldRef / configMap) are
+      # unchanged.
       tokenFile:
         enabled: false
         # Defaults to secretRef / secretKey above when omitted.
         # secretName: datahub-access-token-secret
         # secretKey: datahub-access-token-secret-key
-        mountPath: /mnt/gms-token
+        mountPath: /mnt/secrets
         fileName: token
     executor:
       pool_id: "remote"
