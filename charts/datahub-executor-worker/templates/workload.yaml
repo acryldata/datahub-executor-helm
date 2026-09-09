@@ -139,10 +139,14 @@ spec:
             - name: DATAHUB_AUTH_TYPE
               value: {{ .type | quote }}
             {{- if eq .type "k8s_oidc" }}
+            {{- if .tokenFile }}
             - name: DATAHUB_AUTH_TOKEN_FILE
               value: {{ .tokenFile | quote }}
+            {{- end }}
+            {{- if .audience }}
             - name: DATAHUB_AUTH_AUDIENCE
               value: {{ .audience | quote }}
+            {{- end }}
             {{- else if eq .type "azure_entra" }}
             - name: DATAHUB_AUTH_AZURE_TENANT_ID
               value: {{ .azure.tenantId | quote }}
@@ -155,6 +159,14 @@ spec:
               value: {{ .oidc.tokenEndpoint | quote }}
             - name: DATAHUB_AUTH_CLIENT_ID
               value: {{ .oidc.clientId | quote }}
+            {{- if .oidc.scope }}
+            - name: DATAHUB_AUTH_SCOPE
+              value: {{ .oidc.scope | quote }}
+            {{- end }}
+            {{- if .audience }}
+            - name: DATAHUB_AUTH_AUDIENCE
+              value: {{ .audience | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- end }}
