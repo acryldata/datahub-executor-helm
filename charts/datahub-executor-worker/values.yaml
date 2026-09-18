@@ -21,11 +21,50 @@ global:
     executor:
       pool_id: "remote"
       channel: "SQS"
+      # uv link mode for building ingestion venvs. "hardlink" (default) shares package bytes with
+      # the uv cache — no per-venv copy, no ephemeral spike — and requires the venv working dir and
+      # ~/.cache/uv on the same filesystem. Use "copy" only when they are split (e.g. a separate
+      # emptyDir/tmpfs for /tmp), where hardlinks are impossible.
+      uv_link_mode: hardlink
+      # Allow stored-procedure CALL statements in custom SQL assertions. Off by default:
+      # enabling accepts the risk that the procedure body (opaque to SELECT-only sanitization)
+      # may perform mutations.
+      allow_call_statements: false
       ingestions:
         max_workers: 4
         signal_poll_interval: 2
       monitors:
         max_workers: 10
+      # Per-platform statement timeouts (seconds) for the queries the worker issues during
+      # assertion/monitor evaluation.
+      snowflake:
+        timeout: 600
+        # Quote column identifiers in generated Snowflake assertion queries.
+        quote_columns: false
+      bigquery:
+        timeout: 600
+      redshift:
+        timeout: 600
+      databricks:
+        timeout: 600
+    # Smart-assertion / observe feature flags consumed by the executor worker's monitor-training
+    # and assertion-evaluation paths. Defaults mirror the platform (datahub-helm-fork) so remote
+    # executors behave identically. use_observe_models / use_inference_v2 are no-ops on slim
+    # images that do not ship the datahub_observe package.
+    observability:
+      online_smart_assertions:
+        enabled: true
+      # Skip the source freshness query while the learned update interval proves the
+      # table is still fresh, so smart freshness assertions only query the warehouse
+      # once the result can actually change. Set false to query on every cron firing.
+      smart_freshness_query_gating:
+        enabled: true
+      inference:
+        use_observe_models: true
+        use_inference_v2: false
+        # Emit delta-space prediction bounds. Set false for executor workers not yet on
+        # delta-aware code, otherwise they may emit false-positive anomalies.
+        enable_delta_bounds: true
 
 workloadKind: Deployment
 
@@ -37,7 +76,7 @@ image:
   # GCP: us-docker.pkg.dev/acryl-prod/datahub/datahub-executor
   repository: 795586375822.dkr.ecr.us-west-2.amazonaws.com/datahub-executor
   pullPolicy: Always
-  tag: v2.0.0-cloud
+  tag: v2.2.2-cloud
 
 imagePullSecrets: []
 nameOverride: ""
@@ -90,6 +129,7 @@ resources:
   requests:
     memory: "8Gi"
     cpu: "4"
+    ephemeral-storage: 25Gi
 
 nodeSelector: {}
 
