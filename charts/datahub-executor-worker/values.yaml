@@ -105,15 +105,6 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# Container command/args. Override example — read the GMS token from a mounted
-# Secret on executor images that predate DATAHUB_AUTH_TYPE=pat support (pair
-# with secretRef: "" and an extraVolumes/extraVolumeMounts mount of the token;
-# do NOT mount it under /mnt/secrets, which is the recipe-secret directory).
-# The `exec` matters: it keeps the executor as PID 1 so SIGTERM reaches it and
-# graceful shutdown works.
-# command: ["/bin/sh", "-c"]
-# args:
-#   - export DATAHUB_GMS_TOKEN="$(cat /etc/datahub/auth/token)" && exec /start_datahub_executor.sh
 command: ["/start_datahub_executor.sh"]
 args: []
 
