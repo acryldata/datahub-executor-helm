@@ -4,6 +4,9 @@ global:
       secretRef: datahub-access-token-secret
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
+      tokenFile:
+        enabled: false
+        mountPath: /etc/datahub/auth
     executor:
       pool_id: "remote"
       channel: "SQS"

@@ -1,3 +1,4 @@
+{{- $tokenFile := (((.Values.global.datahub).gms).tokenFile) | default dict -}}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
@@ -62,6 +63,14 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
+      {{- if $tokenFile.enabled }}
+          - name: gms-auth-token
+            secret:
+              secretName: {{ .Values.global.datahub.gms.secretRef | quote }}
+              items:
+                - key: {{ .Values.global.datahub.gms.secretKey | quote }}
+                  path: token
+      {{- end }}
       {{- with .Values.extraCaCerts }}
           - name: ca-certs
             emptyDir: {}
@@ -127,11 +136,18 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
+            {{- if $tokenFile.enabled }}
+            - name: DATAHUB_AUTH_TYPE
+              value: "pat"
+            - name: DATAHUB_AUTH_TOKEN_FILE
+              value: {{ printf "%s/token" $tokenFile.mountPath | quote }}
+            {{- else }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ ((.Values.global.datahub).gms).secretRef }}
                   key: {{ ((.Values.global.datahub).gms).secretKey }}
+            {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}
             - name: DATAHUB_EXECUTOR_POOL_ID
@@ -176,6 +192,11 @@ spec:
             {{- toYaml .Values.extraEnvsFrom | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if $tokenFile.enabled }}
+            - name: gms-auth-token
+              mountPath: {{ $tokenFile.mountPath | quote }}
+              readOnly: true
+            {{- end }}
             {{- if .Values.extraCaCerts }}
             - name: ca-certs
               mountPath: /etc/ssl/certs
