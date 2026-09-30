@@ -4,6 +4,14 @@ global:
       secretRef: datahub-access-token-secret
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
+    auth:
+      type: ""
+      tokenFileEnabled: false
+      # Path to the token file. Leave empty to have the chart mount
+      # gms.secretRef/gms.secretKey read-only at /etc/datahub/auth/token; set a
+      # custom path when the file is delivered externally (Secrets Store CSI
+      # driver, Vault agent, extraVolumes) — then the chart mounts nothing.
+      tokenFile: ""
     executor:
       pool_id: "remote"
       channel: "SQS"
@@ -96,6 +104,9 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+command: ["/start_datahub_executor.sh"]
+args: []
 
 extraEnvs: []
 
