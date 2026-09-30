@@ -66,20 +66,20 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
       {{- if $mountTokenFile }}
-          - name: gms-auth-token
-            secret:
-              secretName: {{ required "gms.secretRef is required to mount the token file (or set auth.tokenFile to an externally delivered path)" ((.Values.global.datahub).gms).secretRef | quote }}
-              items:
-                - key: {{ .Values.global.datahub.gms.secretKey | quote }}
-                  path: token
+        - name: gms-auth-token
+          secret:
+            secretName: {{ required "gms.secretRef is required to mount the token file (or set auth.tokenFile to an externally delivered path)" ((.Values.global.datahub).gms).secretRef | quote }}
+            items:
+              - key: {{ .Values.global.datahub.gms.secretKey | quote }}
+                path: token
       {{- end }}
       {{- with .Values.extraCaCerts }}
-          - name: ca-certs
-            emptyDir: {}
+        - name: ca-certs
+          emptyDir: {}
       {{- range $key, $value := . }}
-          - name: {{ $key }}
-            secret:
-              secretName: {{ $value }}
+        - name: {{ $key }}
+          secret:
+            secretName: {{ $value }}
       {{- end }}
       {{- end }}
       {{- if .Values.extraVolumes }}
@@ -215,7 +215,7 @@ spec:
               mountPath: {{ .Values.persistentVolume.mountPath }}
           {{- end }}
           {{- if .Values.extraVolumeMounts }}
-            {{ toYaml .Values.extraVolumeMounts | nindent 10 }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

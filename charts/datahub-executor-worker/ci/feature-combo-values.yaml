@@ -1,0 +1,29 @@
+# Exercises every volume/volumeMount/env-emitting feature together. Mixed list
+# indentation under volumes:/volumeMounts: is invalid YAML that only surfaces
+# when the blocks render side by side, so keep this combining all of them.
+image:
+  tag: ci-test
+workloadKind: StatefulSet
+persistentVolume:
+  enabled: true
+global:
+  datahub:
+    auth:
+      type: pat
+      tokenFileEnabled: true
+extraCaCerts:
+  ci-ca: ci-ca-secret
+extraVolumes:
+  - name: recipe-secrets
+    secret:
+      secretName: recipe-secrets
+extraVolumeMounts:
+  - name: recipe-secrets
+    mountPath: /mnt/secrets
+    readOnly: true
+extraEnvs:
+  - name: CI_EXTRA
+    value: "1"
+command: ["/bin/sh", "-c"]
+args:
+  - exec /start_datahub_executor.sh
