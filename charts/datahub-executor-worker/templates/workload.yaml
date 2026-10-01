@@ -1,3 +1,7 @@
+{{- $auth := (((.Values.global).datahub).auth) | default dict -}}
+{{- $authType := $auth.type | default "" -}}
+{{- $useTokenFile := $auth.tokenFileEnabled | default false -}}
+{{- $mountTokenFile := and $useTokenFile (empty $auth.tokenFile) -}}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
@@ -62,13 +66,21 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
+      {{- if $mountTokenFile }}
+        - name: gms-auth-token
+          secret:
+            secretName: {{ required "gms.secretRef is required to mount the token file (or set auth.tokenFile to an externally delivered path)" ((.Values.global.datahub).gms).secretRef | quote }}
+            items:
+              - key: {{ .Values.global.datahub.gms.secretKey | quote }}
+                path: token
+      {{- end }}
       {{- with .Values.extraCaCerts }}
-          - name: ca-certs
-            emptyDir: {}
+        - name: ca-certs
+          emptyDir: {}
       {{- range $key, $value := . }}
-          - name: {{ $key }}
-            secret:
-              secretName: {{ $value }}
+        - name: {{ $key }}
+          secret:
+            secretName: {{ $value }}
       {{- end }}
       {{- end }}
       {{- if .Values.extraVolumes }}
@@ -105,7 +117,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ required "image tag is required" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/start_datahub_executor.sh"]
+          command: {{ toJson .Values.command }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             exec:
               command:
@@ -127,47 +143,43 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
-            {{- if and (((.Values.global.datahub).gms).secretRef) (not (((.Values.global).datahub).auth).type) }}
+            {{- if and (((.Values.global.datahub).gms).secretRef) (not $useTokenFile) (has $authType (list "" "pat")) }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ ((.Values.global.datahub).gms).secretRef }}
                   key: {{ ((.Values.global.datahub).gms).secretKey }}
             {{- end }}
-            {{- with (((.Values.global).datahub).auth) }}
-            {{- if .type }}
+            {{- with $auth.type }}
             - name: DATAHUB_AUTH_TYPE
-              value: {{ .type | quote }}
-            {{- if eq .type "k8s_oidc" }}
-            {{- if .tokenFile }}
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if $useTokenFile }}
             - name: DATAHUB_AUTH_TOKEN_FILE
-              value: {{ .tokenFile | quote }}
+              value: {{ $auth.tokenFile | default "/etc/datahub/auth/token" | quote }}
+            {{- else if and (eq $authType "k8s_oidc") $auth.tokenFile }}
+            - name: DATAHUB_AUTH_TOKEN_FILE
+              value: {{ $auth.tokenFile | quote }}
             {{- end }}
-            {{- if .audience }}
+            {{- if and (has $authType (list "k8s_oidc" "oidc_client_credentials")) $auth.audience }}
             - name: DATAHUB_AUTH_AUDIENCE
-              value: {{ .audience | quote }}
+              value: {{ $auth.audience | quote }}
             {{- end }}
-            {{- else if eq .type "azure_entra" }}
+            {{- if eq $authType "azure_entra" }}
             - name: DATAHUB_AUTH_AZURE_TENANT_ID
-              value: {{ .azure.tenantId | quote }}
+              value: {{ $auth.azure.tenantId | quote }}
             - name: DATAHUB_AUTH_AZURE_CLIENT_ID
-              value: {{ .azure.clientId | quote }}
+              value: {{ $auth.azure.clientId | quote }}
             - name: DATAHUB_AUTH_AZURE_SCOPE
-              value: {{ .azure.scope | quote }}
-            {{- else if eq .type "oidc_client_credentials" }}
+              value: {{ $auth.azure.scope | quote }}
+            {{- else if eq $authType "oidc_client_credentials" }}
             - name: DATAHUB_AUTH_TOKEN_ENDPOINT
-              value: {{ .oidc.tokenEndpoint | quote }}
+              value: {{ $auth.oidc.tokenEndpoint | quote }}
             - name: DATAHUB_AUTH_CLIENT_ID
-              value: {{ .oidc.clientId | quote }}
-            {{- if .oidc.scope }}
+              value: {{ $auth.oidc.clientId | quote }}
+            {{- with $auth.oidc.scope }}
             - name: DATAHUB_AUTH_SCOPE
-              value: {{ .oidc.scope | quote }}
-            {{- end }}
-            {{- if .audience }}
-            - name: DATAHUB_AUTH_AUDIENCE
-              value: {{ .audience | quote }}
-            {{- end }}
-            {{- end }}
+              value: {{ . | quote }}
             {{- end }}
             {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
@@ -214,6 +226,11 @@ spec:
             {{- toYaml .Values.extraEnvsFrom | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if $mountTokenFile }}
+            - name: gms-auth-token
+              mountPath: "/etc/datahub/auth"
+              readOnly: true
+            {{- end }}
             {{- if .Values.extraCaCerts }}
             - name: ca-certs
               mountPath: /etc/ssl/certs
@@ -223,7 +240,7 @@ spec:
               mountPath: {{ .Values.persistentVolume.mountPath }}
           {{- end }}
           {{- if .Values.extraVolumeMounts }}
-            {{ toYaml .Values.extraVolumeMounts | nindent 10 }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

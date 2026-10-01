@@ -1,13 +1,20 @@
 global:
   datahub:
     gms:
-      secretRef: datahub-access-token-secret  # set to "" for OAuth (DATAHUB_AUTH_TYPE) deployments
+      secretRef: datahub-access-token-secret
       secretKey: datahub-access-token-secret-key
       url: https://datahub.acryl.io/gms
     auth:
-      # OAuth requires a remote executor image v2.3-cloud or newer.
-      type: ""  # "" = PAT/system; k8s_oidc | azure_entra | oidc_client_credentials
-      tokenFile: ""  # k8s_oidc: path to the projected service-account token (optional; defaults to the EKS path)
+      # "" = PAT via DATAHUB_GMS_TOKEN; pat | k8s_oidc | azure_entra | oidc_client_credentials.
+      # OAuth types require a remote executor image v2.3-cloud or newer and drop DATAHUB_GMS_TOKEN.
+      type: ""
+      tokenFileEnabled: false  # pat only
+      # pat + tokenFileEnabled: path to the token file. Leave empty to have the chart mount
+      # gms.secretRef/gms.secretKey read-only at /etc/datahub/auth/token; set a
+      # custom path when the file is delivered externally (Secrets Store CSI
+      # driver, Vault agent, extraVolumes) — then the chart mounts nothing.
+      # k8s_oidc: path to the projected service-account token (optional; defaults to the EKS path).
+      tokenFile: ""
       audience: ""  # k8s_oidc / oidc_client_credentials: token audience (optional; omit to not send one)
       azure:
         tenantId: ""
@@ -77,7 +84,7 @@ image:
   # GCP: us-docker.pkg.dev/acryl-prod/datahub/datahub-executor
   repository: 795586375822.dkr.ecr.us-west-2.amazonaws.com/datahub-executor
   pullPolicy: Always
-  tag: v2.2.2-cloud
+  tag: v2.3.0-cloud
 
 imagePullSecrets: []
 nameOverride: ""
@@ -111,6 +118,9 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+command: ["/start_datahub_executor.sh"]
+args: []
 
 extraEnvs: []
 
