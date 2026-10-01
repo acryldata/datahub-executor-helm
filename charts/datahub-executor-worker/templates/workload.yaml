@@ -2,6 +2,9 @@
 {{- $authType := $auth.type | default "" -}}
 {{- $useTokenFile := $auth.tokenFileEnabled | default false -}}
 {{- $mountTokenFile := and $useTokenFile (empty $auth.tokenFile) -}}
+{{- if and $useTokenFile (ne $authType "pat") }}
+{{- fail "auth.tokenFileEnabled requires auth.type: pat" }}
+{{- end }}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
