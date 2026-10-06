@@ -8,8 +8,8 @@ global:
       # "" = PAT via DATAHUB_GMS_TOKEN; pat | k8s_oidc | azure_entra | oidc_client_credentials.
       # OAuth types require a remote executor image v2.3-cloud or newer and drop DATAHUB_GMS_TOKEN.
       type: ""
-      tokenFileEnabled: false  # pat only
-      # pat + tokenFileEnabled: path to the token file. Leave empty to have the chart mount
+      tokenFileEnabled: false
+      # tokenFileEnabled: path to the token file. Leave empty to have the chart mount
       # gms.secretRef/gms.secretKey read-only at /etc/datahub/auth/token; set a
       # custom path when the file is delivered externally (Secrets Store CSI
       # driver, Vault agent, extraVolumes) — then the chart mounts nothing.

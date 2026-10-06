@@ -2,9 +2,6 @@
 {{- $authType := $auth.type | default "" -}}
 {{- $useTokenFile := $auth.tokenFileEnabled | default false -}}
 {{- $mountTokenFile := and $useTokenFile (empty $auth.tokenFile) -}}
-{{- if and $useTokenFile (ne $authType "pat") }}
-{{- fail "auth.tokenFileEnabled requires auth.type: pat" }}
-{{- end }}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
@@ -157,33 +154,37 @@ spec:
             - name: DATAHUB_AUTH_TYPE
               value: {{ . | quote }}
             {{- end }}
-            {{- if $useTokenFile }}
+            {{- if or $useTokenFile $auth.tokenFile }}
             - name: DATAHUB_AUTH_TOKEN_FILE
               value: {{ $auth.tokenFile | default "/etc/datahub/auth/token" | quote }}
-            {{- else if and (eq $authType "k8s_oidc") $auth.tokenFile }}
-            - name: DATAHUB_AUTH_TOKEN_FILE
-              value: {{ $auth.tokenFile | quote }}
             {{- end }}
-            {{- if and (has $authType (list "k8s_oidc" "oidc_client_credentials")) $auth.audience }}
+            {{- with $auth.audience }}
             - name: DATAHUB_AUTH_AUDIENCE
-              value: {{ $auth.audience | quote }}
-            {{- end }}
-            {{- if eq $authType "azure_entra" }}
-            - name: DATAHUB_AUTH_AZURE_TENANT_ID
-              value: {{ $auth.azure.tenantId | quote }}
-            - name: DATAHUB_AUTH_AZURE_CLIENT_ID
-              value: {{ $auth.azure.clientId | quote }}
-            - name: DATAHUB_AUTH_AZURE_SCOPE
-              value: {{ $auth.azure.scope | quote }}
-            {{- else if eq $authType "oidc_client_credentials" }}
-            - name: DATAHUB_AUTH_TOKEN_ENDPOINT
-              value: {{ $auth.oidc.tokenEndpoint | quote }}
-            - name: DATAHUB_AUTH_CLIENT_ID
-              value: {{ $auth.oidc.clientId | quote }}
-            {{- with $auth.oidc.scope }}
-            - name: DATAHUB_AUTH_SCOPE
               value: {{ . | quote }}
             {{- end }}
+            {{- with ($auth.azure).tenantId }}
+            - name: DATAHUB_AUTH_AZURE_TENANT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.azure).clientId }}
+            - name: DATAHUB_AUTH_AZURE_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.azure).scope }}
+            - name: DATAHUB_AUTH_AZURE_SCOPE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).tokenEndpoint }}
+            - name: DATAHUB_AUTH_TOKEN_ENDPOINT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).clientId }}
+            - name: DATAHUB_AUTH_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).scope }}
+            - name: DATAHUB_AUTH_SCOPE
+              value: {{ . | quote }}
             {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}

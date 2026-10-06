@@ -1,0 +1,8 @@
+# Interim token-file mode for images without the `pat` provider: the chart mounts
+# the token file with no auth.type, and a command override exports it.
+image:
+  tag: ci-test
+global:
+  datahub:
+    auth:
+      tokenFileEnabled: true

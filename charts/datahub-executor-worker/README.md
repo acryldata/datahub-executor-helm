@@ -46,7 +46,7 @@ Requires a worker image whose `acryl-datahub` ships the `pat` token provider (>=
 
 ### OAuth (`auth.type: k8s_oidc | azure_entra | oidc_client_credentials`)
 
-Instead of a PAT, the worker fetches a short-lived OAuth token and refreshes it automatically. Requires executor image v2.3-cloud or newer, and GMS configured to accept external OAuth tokens (`EXTERNAL_OAUTH_*`; see DataHub's `docs/authentication/external-oauth-providers.md`). An OAuth `auth.type` drops `DATAHUB_GMS_TOKEN`; `tokenFileEnabled` is `pat`-only and fails the render otherwise.
+Instead of a PAT, the worker fetches a short-lived OAuth token and refreshes it automatically. Requires executor image v2.3-cloud or newer, and GMS configured to accept external OAuth tokens (`EXTERNAL_OAUTH_*`; see DataHub's `docs/authentication/external-oauth-providers.md`). An OAuth `auth.type` drops `DATAHUB_GMS_TOKEN`. Each `DATAHUB_AUTH_*` var renders only when its value is set; the executor reads the ones its `auth.type` needs.
 
 Client secrets never go in values — supply them from a Secret via `extraEnvsFrom` (keys `DATAHUB_AUTH_CLIENT_SECRET` / `DATAHUB_AUTH_AZURE_CLIENT_SECRET`).
 
