@@ -1,4 +1,5 @@
 {{- $auth := (((.Values.global).datahub).auth) | default dict -}}
+{{- $authType := $auth.type | default "" -}}
 {{- $useTokenFile := $auth.tokenFileEnabled | default false -}}
 {{- $mountTokenFile := and $useTokenFile (empty $auth.tokenFile) -}}
 apiVersion: apps/v1
@@ -142,7 +143,7 @@ spec:
           env:
             - name: DATAHUB_GMS_URL
               value: {{ ((.Values.global.datahub).gms).url }}
-            {{- if and (((.Values.global.datahub).gms).secretRef) (not $useTokenFile) }}
+            {{- if and (((.Values.global.datahub).gms).secretRef) (not $useTokenFile) (has $authType (list "" "pat")) }}
             - name: DATAHUB_GMS_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -153,9 +154,37 @@ spec:
             - name: DATAHUB_AUTH_TYPE
               value: {{ . | quote }}
             {{- end }}
-            {{- if $useTokenFile }}
+            {{- if or $useTokenFile $auth.tokenFile }}
             - name: DATAHUB_AUTH_TOKEN_FILE
               value: {{ $auth.tokenFile | default "/etc/datahub/auth/token" | quote }}
+            {{- end }}
+            {{- with $auth.audience }}
+            - name: DATAHUB_AUTH_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.azure).tenantId }}
+            - name: DATAHUB_AUTH_AZURE_TENANT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.azure).clientId }}
+            - name: DATAHUB_AUTH_AZURE_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.azure).scope }}
+            - name: DATAHUB_AUTH_AZURE_SCOPE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).tokenEndpoint }}
+            - name: DATAHUB_AUTH_TOKEN_ENDPOINT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).clientId }}
+            - name: DATAHUB_AUTH_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with ($auth.oidc).scope }}
+            - name: DATAHUB_AUTH_SCOPE
+              value: {{ . | quote }}
             {{- end }}
             - name: DATAHUB_EXECUTOR_MODE
               value: {{ eq (.Values.global.datahub.executor.channel | default "SQS") "KAFKA" | ternary "kafka-worker" "worker" | quote }}

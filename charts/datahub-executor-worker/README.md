@@ -43,3 +43,31 @@ global:
 `auth.type: pat` without `tokenFileEnabled` keeps the token in the `DATAHUB_GMS_TOKEN` env var (the provider's fallback source) — the same delivery as the default mode, just with the auth mechanism named explicitly.
 
 Requires a worker image whose `acryl-datahub` ships the `pat` token provider (>= 1.7.0.14).
+
+### OAuth (`auth.type: k8s_oidc | azure_entra | oidc_client_credentials`)
+
+Instead of a PAT, the worker fetches a short-lived OAuth token and refreshes it automatically. Requires executor image v2.3-cloud or newer, and GMS configured to accept external OAuth tokens (`EXTERNAL_OAUTH_*`; see DataHub's `docs/authentication/external-oauth-providers.md`). An OAuth `auth.type` drops `DATAHUB_GMS_TOKEN`. Each `DATAHUB_AUTH_*` var renders only when its value is set; the executor reads the ones its `auth.type` needs.
+
+Client secrets never go in values — supply them from a Secret via `extraEnvsFrom` (keys `DATAHUB_AUTH_CLIENT_SECRET` / `DATAHUB_AUTH_AZURE_CLIENT_SECRET`).
+
+```yaml
+global:
+  datahub:
+    auth:
+      type: oidc_client_credentials
+      audience: https://datahub.example.com   # optional
+      oidc:
+        tokenEndpoint: https://idp.example.com/oauth2/token
+        clientId: datahub-executor
+        scope: ""                              # optional
+extraEnvsFrom:
+  - secretRef:
+      name: datahub-executor-oauth             # key: DATAHUB_AUTH_CLIENT_SECRET
+```
+
+| Value | Env var | Provider |
+| --- | --- | --- |
+| `tokenFile` | `DATAHUB_AUTH_TOKEN_FILE` | `k8s_oidc` (optional; defaults to the EKS projected-token path — mount a projected `serviceAccountToken` via `extraVolumes`) |
+| `audience` | `DATAHUB_AUTH_AUDIENCE` | `k8s_oidc`, `oidc_client_credentials` (optional) |
+| `azure.tenantId` / `clientId` / `scope` | `DATAHUB_AUTH_AZURE_*` | `azure_entra` (client secret optional with workload identity) |
+| `oidc.tokenEndpoint` / `clientId` / `scope` | `DATAHUB_AUTH_TOKEN_ENDPOINT` / `CLIENT_ID` / `SCOPE` | `oidc_client_credentials` (`scope` optional) |

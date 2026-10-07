@@ -1,0 +1,16 @@
+# OAuth (oidc_client_credentials): no DATAHUB_GMS_TOKEN, DATAHUB_AUTH_* from values,
+# client secret from a Secret via extraEnvsFrom.
+image:
+  tag: ci-test
+global:
+  datahub:
+    auth:
+      type: oidc_client_credentials
+      audience: https://datahub.example.com
+      oidc:
+        tokenEndpoint: https://idp.example.com/oauth2/token
+        clientId: datahub-executor
+        scope: datahub
+extraEnvsFrom:
+  - secretRef:
+      name: datahub-executor-oauth
