@@ -1,4 +1,4 @@
-name: Sync Reminder for Terraform and CloudFormation
+name: Sync Reminder for Remote Executor deploy paths
 
 on:
   pull_request:
@@ -168,10 +168,12 @@ jobs:
               '',
               '---',
               '',
-              'Please mirror the change (if applicable) into both other deployment methods:',
+              'Please mirror the change (if applicable) into the other deployment methods:',
               '',
               '- [ ] **Terraform** — `acryldata/datahub-terraform-modules` → `remote-ingestion-executor/`',
               '- [ ] **CloudFormation** — `acryldata/datahub-cloudformation` → `remote-executor/datahub-executor.ecs.template.yaml`',
+              '- [ ] **Helm (fork)** — `acryldata/datahub-helm-fork` → `charts/datahub/subcharts/acryl-datahub-executor-worker/` (a vendored copy of this chart)',
+              '',
               '',
               "If this change does not affect the container's environment variables / deployment surface, you can mark this ticket **Done** without any further steps.",
               '',
@@ -221,8 +223,8 @@ jobs:
             const assigned = process.env.ASSIGNEE_ID !== '';
 
             const line = assigned
-              ? `@${author} — you've been assigned. Please mirror the change into Terraform and CloudFormation, or close the ticket if it doesn't apply.`
-              : `@${author} — couldn't auto-assign you in Linear; please self-assign **[${id}](${url})**. Mirror the change into Terraform and CloudFormation, or close the ticket if it doesn't apply.`;
+              ? `@${author} — you've been assigned. Please mirror the change into Terraform, CloudFormation, and the Helm fork, or close the ticket if it doesn't apply.`
+              : `@${author} — couldn't auto-assign you in Linear; please self-assign **[${id}](${url})**. Mirror the change into Terraform, CloudFormation, and the Helm fork, or close the ticket if it doesn't apply.`;
 
             const body = [
               `🔁 Created a sync reminder to mirror this change into **Terraform** and **CloudFormation**: **[${id}](${url})**`,
