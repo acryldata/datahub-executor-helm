@@ -40,6 +40,11 @@ global:
       # enabling accepts the risk that the procedure body (opaque to SELECT-only sanitization)
       # may perform mutations.
       allow_call_statements: false
+      # Send the detailed status (work intake, task slots, running tasks) with each heartbeat,
+      # and the runtime report (resources, settings, environment). Both show on the Executors
+      # page. Set false to turn either off; older executor images ignore them.
+      status_details_enabled: true
+      report_runtime: true
       ingestions:
         max_workers: 4
         signal_poll_interval: 2
