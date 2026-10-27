@@ -198,6 +198,10 @@ spec:
               value: {{ .Values.global.datahub.executor.ingestions.signal_poll_interval | quote }}
             - name: DATAHUB_EXECUTOR_MONITORS_MAX_WORKERS
               value: {{ .Values.global.datahub.executor.monitors.max_workers | quote }}
+            - name: DATAHUB_EXECUTOR_STATUS_DETAILS_ENABLED
+              value: {{ .Values.global.datahub.executor.reporting.status_details_enabled | quote }}
+            - name: DATAHUB_EXECUTOR_REPORT_RUNTIME
+              value: {{ .Values.global.datahub.executor.reporting.runtime_details_enabled | quote }}
             - name: ONLINE_SMART_ASSERTIONS_ENABLED
               value: {{ (((.Values.global.datahub).observability).online_smart_assertions).enabled | default true | quote }}
             - name: SMART_FRESHNESS_QUERY_GATING_ENABLED
