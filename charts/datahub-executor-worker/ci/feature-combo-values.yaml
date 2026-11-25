@@ -24,6 +24,8 @@ extraVolumeMounts:
 extraEnvs:
   - name: CI_EXTRA
     value: "1"
+  - name: DATAHUB_EXECUTOR_PRINT_SUBPROCESS_LOGS
+    value: "false"
 command: ["/bin/sh", "-c"]
 args:
   - exec /start_datahub_executor.sh

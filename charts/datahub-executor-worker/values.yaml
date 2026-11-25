@@ -50,6 +50,7 @@ global:
       ingestions:
         max_workers: 4
         signal_poll_interval: 2
+        print_subprocess_logs: true
       monitors:
         max_workers: 10
       # Per-platform statement timeouts (seconds) for the queries the worker issues during

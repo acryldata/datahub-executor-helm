@@ -2,6 +2,8 @@
 {{- $authType := $auth.type | default "" -}}
 {{- $useTokenFile := $auth.tokenFileEnabled | default false -}}
 {{- $mountTokenFile := and $useTokenFile (empty $auth.tokenFile) -}}
+{{- $extraEnvNames := list -}}
+{{- range .Values.extraEnvs }}{{ $extraEnvNames = append $extraEnvNames .name }}{{ end -}}
 apiVersion: apps/v1
 kind: {{ .Values.workloadKind }}
 metadata:
@@ -196,6 +198,10 @@ spec:
               value: {{ .Values.global.datahub.executor.ingestions.max_workers | quote }}
             - name: DATAHUB_EXECUTOR_INGESTION_SIGNAL_POLL_INTERVAL
               value: {{ .Values.global.datahub.executor.ingestions.signal_poll_interval | quote }}
+            {{- if not (has "DATAHUB_EXECUTOR_PRINT_SUBPROCESS_LOGS" $extraEnvNames) }}
+            - name: DATAHUB_EXECUTOR_PRINT_SUBPROCESS_LOGS
+              value: {{ .Values.global.datahub.executor.ingestions.print_subprocess_logs | quote }}
+            {{- end }}
             - name: DATAHUB_EXECUTOR_MONITORS_MAX_WORKERS
               value: {{ .Values.global.datahub.executor.monitors.max_workers | quote }}
             - name: DATAHUB_EXECUTOR_STATUS_DETAILS_ENABLED
